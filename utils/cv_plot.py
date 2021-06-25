@@ -6,7 +6,7 @@
 import numpy as np
 import cv2
 
-end_list = np.array([17, 22, 27, 42, 48, 31, 36, 68], dtype=np.int32) - 1
+
 
 
 def plot_kpt(image, kpt):
