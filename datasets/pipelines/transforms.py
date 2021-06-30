@@ -312,7 +312,6 @@ class Resize(object):
 
     def _resize_img(self, results):
         """Resize images with ``results['scale']``."""
-
         if self.keep_ratio:
             img, scale_factor = mmcv.imrescale(
                 results["img_meta"]["img"],
@@ -395,6 +394,7 @@ class Resize(object):
 
 @PIPELINES.register_module()
 class RandomFlip(object):
+    #TODO Wrong implemention, Flip cannot be simple applied
     """Flip the image & bbox & mask.
 
     If the input dict contains the key "flip", then the flag will be used,
@@ -668,6 +668,7 @@ class CutOut(object):
 
     def __init__(self,
                  n_holes,
+                 prob=0.2,
                  cutout_shape=None,
                  cutout_ratio=None,
                  fill_in=(0, 0, 0)):
@@ -680,6 +681,7 @@ class CutOut(object):
             assert len(n_holes) == 2 and 0 <= n_holes[0] < n_holes[1]
         else:
             n_holes = (n_holes, n_holes)
+        self.prob = prob
         self.n_holes = n_holes
         self.fill_in = fill_in
         self.with_ratio = cutout_ratio is not None
@@ -689,21 +691,23 @@ class CutOut(object):
 
     def __call__(self, results):
         """Call function to drop some regions of image."""
-        h, w, c = results['img_meta']["img"].shape
-        n_holes = np.random.randint(self.n_holes[0], self.n_holes[1] + 1)
-        for _ in range(n_holes):
-            x1 = np.random.randint(0, w)
-            y1 = np.random.randint(0, h)
-            index = np.random.randint(0, len(self.candidates))
-            if not self.with_ratio:
-                cutout_w, cutout_h = self.candidates[index]
-            else:
-                cutout_w = int(self.candidates[index][0] * w)
-                cutout_h = int(self.candidates[index][1] * h)
+        prob = np.random.random()
+        if prob > self.prob:
+            h, w, c = results['img_meta']["img"].shape
+            n_holes = np.random.randint(self.n_holes[0], self.n_holes[1] + 1)
+            for _ in range(n_holes):
+                x1 = np.random.randint(0, w)
+                y1 = np.random.randint(0, h)
+                index = np.random.randint(0, len(self.candidates))
+                if not self.with_ratio:
+                    cutout_w, cutout_h = self.candidates[index]
+                else:
+                    cutout_w = int(self.candidates[index][0] * np.random.random() * w)
+                    cutout_h = int(self.candidates[index][1] * np.random.random()* h)
 
-            x2 = np.clip(x1 + cutout_w, 0, w)
-            y2 = np.clip(y1 + cutout_h, 0, h)
-            results['img_meta']["img"][y1:y2, x1:x2, :] = self.fill_in
+                x2 = np.clip(x1 + cutout_w, 0, w)
+                y2 = np.clip(y1 + cutout_h, 0, h)
+                results['img_meta']["img"][y1:y2, x1:x2, :] = self.fill_in
 
         return results
 

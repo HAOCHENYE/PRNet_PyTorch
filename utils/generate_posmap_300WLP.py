@@ -8,9 +8,6 @@ import scipy.io as sio
 from skimage import io
 import skimage.transform
 import argparse
-from time import time
-import matplotlib.pyplot as plt
-import json
 
 sys.path.append('..')
 import face3d
@@ -21,7 +18,7 @@ from face3d.morphable_model import MorphabelModel
 def process_uv(uv_coords, uv_h=256, uv_w=256):
     uv_coords[:, 0] = uv_coords[:, 0] * (uv_w - 1)
     uv_coords[:, 1] = uv_coords[:, 1] * (uv_h - 1)
-    uv_coords[:, 1] = uv_h - uv_coords[:, 1] - 1
+    uv_coords[:, 1] = uv_h - uv_coords[:, 1] - 1 #翻转坐标
     uv_coords = np.hstack((uv_coords, np.zeros((uv_coords.shape[0], 1))))  # add z
     return uv_coords
 
@@ -143,7 +140,10 @@ def run_posmap_300W_LP(bfm, image_path, mat_path, save_folder, idx=0, uv_h=256, 
 
     # 4. uv position map: render position in uv space
     uv_position_map = mesh.render.render_colors(uv_coords, bfm.full_triangles, position, uv_h, uv_w, c=3)
-
+    # import cv2
+    # res = cv2.remap(cropped_image, uv_position_map[..., :2], None, interpolation=cv2.INTER_NEAREST)
+    # cv2.imwrite('res.jpg', res*255)
+    # cv2.imwrite('cropped_img.jpg', cropped_image*255)
     # 5. save files
     if not os.path.exists(os.path.join(save_folder, str(idx) + '/')):
         os.mkdir(os.path.join(save_folder, str(idx) + '/'))
@@ -159,19 +159,19 @@ def run_posmap_300W_LP(bfm, image_path, mat_path, save_folder, idx=0, uv_h=256, 
     # io.imsave('{}/{}'.format(save_folder, image_name.replace('.jpg', '_tex.jpg')), np.squeeze(uv_texture_map_rec))
 
 
-def generate_batch_sample(input_dir, save_folder='./300WLP'):
-    if not os.path.exists(save_folder):
-        os.mkdir(save_folder)
+def generate_batch_sample(args):
+    if not os.path.exists(args.save_dir):
+        os.mkdir(args.save_dir)
     # set para
     uv_h = uv_w = 256
 
     # load uv coords
     global uv_coords
-    uv_coords = face3d.morphable_model.load.load_uv_coords('../utils/BFM_UV.mat')  #
+    uv_coords = face3d.morphable_model.load.load_uv_coords(args.uv_path)  #
     uv_coords = process_uv(uv_coords, uv_h, uv_w)
 
     # load bfm
-    bfm = MorphabelModel('BFM.mat')
+    bfm = MorphabelModel(args.bfm_path)
 
     # Batch generating uv_map Dataset
     """
@@ -186,21 +186,22 @@ def generate_batch_sample(input_dir, save_folder='./300WLP'):
     """
     base = 0
 
-    for idx, item in enumerate(os.listdir(input_dir)):
+    for idx, item in enumerate(os.listdir(args.input_dir)):
         if 'jpg' in item:
-            ab_path = os.path.join(input_dir, item)
+            ab_path = os.path.join(args.input_dir, item)
             img_path = ab_path
             mat_path = ab_path.replace('jpg', 'mat')
 
-            run_posmap_300W_LP(bfm, img_path, mat_path, save_folder, idx + base)
+            run_posmap_300W_LP(bfm, img_path, mat_path, args.save_dir, idx + base)
             print("Number {} uv_pos_map was generated!".format(idx))
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--save_dir", help="specify output uv_map directory.")
-    parser.add_argument("--input_dir", help="specify input origin mat & image directory.")
+    parser.add_argument("save_dir", help="specify output uv_map directory.")
+    parser.add_argument("input_dir", help="specify input origin mat & image directory.")
+    parser.add_argument("--uv_path", default='BFM_UV.mat', help="path of BFM_UV.mat")
+    parser.add_argument("--bfm_path", default='BFM.mat', help="path of BFM_UV.mat")
     args = parser.parse_args()
 
-    generate_batch_sample(save_folder=args.save_dir,
-                          input_dir=args.input_dir)
+    generate_batch_sample(args)

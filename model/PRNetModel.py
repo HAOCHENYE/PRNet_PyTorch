@@ -57,8 +57,8 @@ class PRNetModel(nn.Module):
         valid_vertices = result[self.face_ind, :]
         kpt = vertices[self.uv_kpt_ind[1, :], self.uv_kpt_ind[0, :], :]
         return dict(all_vertices=vertices.detach().cpu().numpy(),
-                    valid_vertices=valid_vertices.detach().cpu().numpy(),
-                    keypoint=kpt.detach().cpu().numpy(),
+                    dense_point=valid_vertices.detach().cpu().numpy(),
+                    sparse_point=kpt.detach().cpu().numpy(),
                     face_idx=self.face_ind)
 
     def export_onnx(self, dummy_input):

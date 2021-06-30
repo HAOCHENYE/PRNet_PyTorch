@@ -5,7 +5,7 @@
     @function: hyparameter for training & inference.
 """
 base_lr = 1e-4
-model = dict(type="FaceModel",
+model = dict(type="PRNetModel",
              backbone=dict(type="ResFCN256"))
 
 train_pipeline = [
@@ -13,7 +13,7 @@ train_pipeline = [
             dict(type='LoadLabel'),
             dict(type="CoordNormalize", mean=0, std=256),
             dict(type='PhotoMetricDistortion', brightness_delta=32),
-            dict(type='RandomFlip', flip_ratio=0.5),
+            dict(type="CutOut", n_holes=(1, 3), prob=0.3, cutout_ratio=(0.5, 0.5)),
             dict(
                 type='Normalize',
                 mean=[127.5, 127.5, 127.5],
@@ -75,6 +75,6 @@ dist_params = dict(backend='nccl')
 optimizer = dict(type='AdamW', lr=1e-4)
 optimizer_config = dict(grad_clip=None)
 gpu_ids = range(0, 2)
-work_dir = 'work_dirs/PRNetFlip'
+work_dir = 'work_dirs/PRNetCutOut'
 resume_from = None
 load_from = "work_dirs/PRNetOri/epoch_300.pth"

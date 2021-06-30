@@ -6,31 +6,9 @@ import torch.nn as nn
 import math
 from .builder import FACELOSS
 import numpy as np
-import pickle
-
-def _get_suffix(filename):
-    """a.jpg -> jpg"""
-    pos = filename.rfind('.')
-    if pos == -1:
-        return ''
-    return filename[pos + 1:]
+from model.temp_func import _load
 
 
-def _load(fp):
-    suffix = _get_suffix(fp)
-    if suffix == 'npy':
-        return np.load(fp)
-    elif suffix == 'pkl':
-        return pickle.load(open(fp, 'rb'))
-
-def _tensor_to_cuda(x):
-    if x.is_cuda:
-        return x
-    else:
-        return x.cuda()
-
-_numpy_to_cuda = lambda x: _tensor_to_cuda(torch.from_numpy(x))
-_to_tensor = _numpy_to_cuda  # gpu
 
 def _parse_param_batch(param):
     """Work for both numpy and tensor"""
@@ -45,42 +23,25 @@ def _parse_param_batch(param):
 @FACELOSS.register_module()
 class VDCLoss(nn.Module):
     def __init__(self,
-                 keypoints="../config/3DFFA/keypoints_sim.npy",
-                 w_shp="../config/3DFFA/w_shp_sim.npy",
-                 w_exp="../config/3DFFA/w_exp_sim.npy",
-                 u_shp="../config/3DFFA/u_shp.npy",
-                 u_exp="../config/3DFFA/u_exp.npy",
-                 meta='param_whitening.pkl',
+                 used_item=dict(param_mean=None,
+                                param_std=None,
+                                u=None,
+                                w_shp=None,
+                                w_exp=None,
+                                keypoints=None,
+                                ),
                  opt_style='all'):
         super(VDCLoss, self).__init__()
 
-        keypoints = self._load(keypoints)
-        w_shp = _load(w_shp)
-        w_exp = _load(w_exp)
-        u_shp = _load(u_shp)
-        u_exp = _load(u_exp)
-
-        meta = _load(meta)
-        # param_mean and param_std are used for re-whitening
-        param_mean = meta.get('param_mean')
-        param_std = meta.get('param_std')
-
-        u = u_shp + u_exp
-        w = np.concatenate((w_shp, w_exp), axis=1)
-
-        self.register_buffer("param_mean", torch.from_numpy(param_mean))
-        self.register_buffer("param_std", torch.from_numpy(param_std))
-        self.register_buffer("u", torch.from_numpy(u))
-        self.register_buffer("w_shp", torch.from_numpy(w_shp))
-        self.register_buffer("w_exp", torch.from_numpy(w_exp))
-        self.register_buffer("keypoints", torch.from_numpy(keypoints))
+        for attr, value in used_item.items():
+            assert isinstance(value, torch.Tensor), "used_item should be define in DDFA model!!!"
+            self.register_buffer(attr, value)
 
         self.u_base = self.u[self.keypoints]
         self.w_shp_base = self.w_shp[self.keypoints]
         self.w_exp_base = self.w_exp[self.keypoints]
 
         self.w_shp_length = self.w_shp.shape[0] // 3
-
         self.opt_style = opt_style
 
     def reconstruct_and_parse(self, input, target):
@@ -146,41 +107,25 @@ class WPDCLoss(nn.Module):
     """Input and target are all 62-d param"""
 
     def __init__(self,
-                 keypoints="../config/3DFFA/keypoints_sim.npy",
-                 w_shp="../config/3DFFA/w_shp_sim.npy",
-                 w_exp="../config/3DFFA/w_exp_sim.npy",
-                 u_shp="../config/3DFFA/u_shp.npy",
-                 u_exp="../config/3DFFA/u_exp.npy",
-                 meta='param_whitening.pkl',
-                 opt_style='resample', resample_num=132):
+                 opt_style='resample',
+                 resample_num=132,
+                 used_item=dict(param_mean=None,
+                                param_std=None,
+                                u=None,
+                                w_shp=None,
+                                w_exp=None,
+                                keypoints=None,
+                                )):
         super(WPDCLoss, self).__init__()
-        keypoints = self._load(keypoints)
-        w_shp = _load(w_shp)
-        w_exp = _load(w_exp)
-        u_shp = _load(u_shp)
-        u_exp = _load(u_exp)
+        for attr, value in used_item.items():
+            assert isinstance(value, torch.Tensor), "used_item should be define in DDFA model!!!"
+            self.register_buffer(attr, value)
 
-        meta = _load(meta)
-        # param_mean and param_std are used for re-whitening
-        param_mean = meta.get('param_mean')
-        param_std = meta.get('param_std')
-
-        u = u_shp + u_exp
-        w = np.concatenate((w_shp, w_exp), axis=1)
-        w_norm = np.linalg.norm(w, axis=0)
-
-        self.opt_style = opt_style
-
-        self.register_buffer("param_mean", torch.from_numpy(param_mean))
-        self.register_buffer("param_std", torch.from_numpy(param_std))
-        self.register_buffer("u", torch.from_numpy(u))
-        self.register_buffer("w_shp", torch.from_numpy(w_shp))
-        self.register_buffer("w_exp", torch.from_numpy(w_exp))
-        self.register_buffer("w_norm", torch.from_numpy(w_norm))
-        self.register_buffer("keypoints", torch.from_numpy(keypoints))
-
+        w = np.concatenate((self.w_shp, self.w_exp), axis=1)
+        self.w_norm = np.linalg.norm(w, axis=0)
         self.w_shp_length = self.w_shp.shape[0] // 3
         self.resample_num = resample_num
+        self.opt_style = opt_style
 
     def reconstruct_and_parse(self, input, target):
         # reconstruct

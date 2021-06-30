@@ -7,7 +7,7 @@
 """
 import torch
 import numpy as np
-from model import FaceModel
+from model import PRNetModel
 
 class PRN:
     '''
@@ -28,7 +28,7 @@ class PRN:
         self.triangles_path = kwargs.get("triangles_path") or "../utils/uv_data/triangles.txt"
 
         # 1) load model.
-        self.pos_predictor = FaceModel()
+        self.pos_predictor = PRNetModel()
         state = torch.load(model_dir)['state_dict']
         if list(state.keys())[0].startswith('module.'):
             state_dict = {k[7:]: v for k, v in state.items()}

@@ -171,10 +171,16 @@ class ToDataContainer(object):
 
 @PIPELINES.register_module()
 class DefaultFormatBundle(object):
-    def __init__(self, img_tensor=["img"], label_tensor=["label"]):
+    def __init__(self, img_tensor=["img"], label_tensor=["label"], label_padding_dim=2):
+        """
+
+        :param img_tensor:
+        :param label_tensor:
+        :param label_padding_dim:  when label is not image, it doesn't need padding
+        """
         self.img_tensor = img_tensor
         self.label_tensor = label_tensor
-
+        self.label_padding_dim = label_padding_dim
     def __call__(self, results):
         """Call function to transform and format common fields in results.
 
@@ -199,8 +205,9 @@ class DefaultFormatBundle(object):
         if results["label_meta"]['label_path']:
             for key in self.label_tensor:
                 tensor = results["label_meta"][key]
-                tensor = np.ascontiguousarray(tensor.transpose(2, 0, 1))
-                tensor = DC(to_tensor(tensor), stack=True)
+                if len(tensor.shape) == 3:
+                    tensor = np.ascontiguousarray(tensor.transpose(2, 0, 1))
+                tensor = DC(to_tensor(tensor), stack=True, pad_dims=self.label_padding_dim)
                 results["label_meta"][key] = tensor
 
         return results

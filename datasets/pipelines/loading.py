@@ -4,7 +4,7 @@ import os
 import mmcv
 import numpy as np
 import pycocotools.mask as maskUtils
-
+import pickle
 from ..builder import PIPELINES
 
 
@@ -246,8 +246,9 @@ class LoadLabel(object):
         Returns:
             dict: The dict contains loaded label annotations.
         """
+        if results["label_meta"]["label_path"].endswith(".npy"):
+            results['label_meta']["label"] = np.load(results["label_meta"]["label_path"])
 
-        results['label_meta']["label"] = np.load(results["label_meta"]["label_path"])
         return results
 
     def __call__(self, results):

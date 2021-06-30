@@ -6,10 +6,9 @@
     @func: same function as api.py in original PRNet Repo.
 """
 from model.builder import build_face_model
-import mmcv
 from mmcv.runner import load_checkpoint
 from mmcv.parallel import collate, scatter
-from datasets.pipelines import Compose
+import torch
 
 def init_face_model(config, checkpoint=None, device="cuda:0"):
     config.model.pretrained = None
@@ -34,8 +33,8 @@ def inference(model, img, test_pipeline):
     if next(model.parameters()).is_cuda:
         # scatter to specified GPU
         data = scatter(data, [device])[0]
-
-    result = model.inference(data)
+    with torch.no_grad():
+        result = model.inference(data)
     return result
 
 

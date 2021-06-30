@@ -52,7 +52,7 @@ def rasterize_triangles(vertices, triangles, h, w):
 
 
 def render_colors(vertices, triangles, colors, h, w, c=3, BG=None):
-    ''' render mesh with colors
+    ''' render mesh with colors (render UV Map?)
     Args:
         vertices: [nver, 3]
         triangles: [ntri, 3] 

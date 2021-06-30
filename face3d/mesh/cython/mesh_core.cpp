@@ -172,6 +172,7 @@ void _render_colors_core(
     float* depth_buffer,
     int nver, int ntri,
     int h, int w, int c)
+    //render image
 {
     int i;
     int x, y, k;
@@ -212,7 +213,7 @@ void _render_colors_core(
                 {
                     get_point_weight(weight, p, p0, p1, p2);
                     p_depth = weight[0]*p0_depth + weight[1]*p1_depth + weight[2]*p2_depth;
-
+                    //p_depth用于管理覆盖关系
                     if((p_depth > depth_buffer[y*w + x]))
                     {
                         for(k = 0; k < c; k++) // c
@@ -242,6 +243,7 @@ void _render_texture_core(
     int h, int w, int c, 
     int tex_h, int tex_w, int tex_c, 
     int mapping_type)
+    //map texture, render uv map
 {
     int i;
     int x, y, k;

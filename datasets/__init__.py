@@ -1,5 +1,6 @@
 from .builder import DATASETS, PIPELINES, build_dataloader, build_dataset
 from .WLP300dataset import WLP300Dataset
+from .AFLWDataset import DDFADataset
 # from .cityscapes import CityscapesDataset
 # from .coco import CocoDataset
 # from .custom import CustomDataset

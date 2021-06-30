@@ -12,8 +12,6 @@ pip install -r requirements.txt
 
 具体每个项目的启用方法在对应config文件中
 
-
-
 ## Train
 
 具体数据集准备步骤见config/PRNet
@@ -32,8 +30,6 @@ cd ${PROJECT_PATH}/tools
 ./dist_train.sh config/PRNet/ori_config.py 2
 ```
 
-
-
 ## Test
 
 目前仅支持单卡测试多张图片，保存关键点图片
@@ -44,5 +40,18 @@ python test_image.py \
 ../config/PRNet/ori_config.py \
 ../tools/${YOUR WORK_DIRS}/latest.pth \
 --out_dir ../sample/results
+```
+
+## Onnx
+
+导出PRNet的Onnx模型
+
+```shell
+cd ${PROJECT_PATH}/tools
+python export_onnx.py \
+../config/PRNet/ori_config.py \
+../tools/${YOUR WORK_DIRS}/latest.pth \
+--output-file \
+OnnxDir/PRNet.onnx \
 ```
 

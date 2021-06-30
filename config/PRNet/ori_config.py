@@ -5,7 +5,7 @@
     @function: hyparameter for training & inference.
 """
 base_lr = 1e-4
-model = dict(type="FaceModel",
+model = dict(type="PRNetModel",
              backbone=dict(type="ResFCN256"))
 
 train_pipeline = [
@@ -70,10 +70,11 @@ lr_config = dict(
 #                  warmup="linear",
 #                  warmup_iters=1000,
 #                  warmup_ratio=0.1,)
-
+log_level = 'INFO'
 dist_params = dict(backend='nccl')
 optimizer = dict(type='AdamW', lr=1e-4)
 optimizer_config = dict(grad_clip=None)
 gpu_ids = range(0, 2)
+work_dir = 'work_dirs/PRNetOri'
 resume_from = None
-load_from = "work_dirs/latest.pth"
+load_from = None

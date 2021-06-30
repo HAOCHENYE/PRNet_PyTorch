@@ -35,8 +35,8 @@ def main():
 
         result = inference(model, image_path, test_pipeline)
 
-        image_kpt = VisualAPI.plot_kpt(image, result["keypoint"])
-        imgae_vertices = VisualAPI.plot_vertices(image, result["valid_vertices"])
+        image_kpt = VisualAPI.plot_kpt(image, result["sparse_point"])
+        imgae_vertices = VisualAPI.plot_vertices(image, result["dense_point"])
 
         mmcv.imwrite(image_kpt, os.path.join(args.out_dir, f"{name}_kpt.jpg"))
         mmcv.imwrite(imgae_vertices, os.path.join(args.out_dir, f"{name}_vertices.jpg"))

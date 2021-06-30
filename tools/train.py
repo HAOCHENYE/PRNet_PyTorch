@@ -7,7 +7,6 @@ from mmcv.runner import (DistSamplerSeedHook, EpochBasedRunner,
 from datasets.builder import build_dataloader
 import os, sys
 from mmcv.utils import get_logger
-import logging
 import time
 from mmcv import Config, DictAction
 import warnings
@@ -15,8 +14,8 @@ import argparse
 from model.builder import build_face_model
 from mmcv.runner import init_dist
 from datasets.builder import build_dataset
-timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-
+import os.path as osp
+import mmcv
 def set_random_seed(seed, deterministic=False):
     """Set random seed.
 
@@ -96,14 +95,16 @@ def parse_args():
     return args
 
 def main():
+    timestamp = time.strftime('%Y%m%d_%H%M%S', time.localtime())
     args = parse_args()
     cfg = Config.fromfile(args.config)
     model = build_face_model(cfg.model)
-
-
     optimizer = build_optimizer(model, cfg.optimizer)
-    logger = get_logger(name='PRNet', log_file='INFO', log_level=logging.INFO)
 
+    mmcv.mkdir_or_exist(osp.abspath(cfg.work_dir))
+    log_file = osp.join(cfg.work_dir, f'{timestamp}.log')
+    logger = get_logger(name='PRNet', log_file=log_file, log_level=cfg.log_level)
+    logger.info(f'Config:\n{cfg.pretty_text}')
 
     if args.launcher == 'none':
         distributed = False
@@ -124,10 +125,10 @@ def main():
             model.cuda(0), device_ids=[0])
 
     dataset = build_dataset(cfg.data.train)
-    wlp300_dataloader = build_dataloader(dataset, cfg.data.samples_per_gpu, 2, len(cfg.gpu_ids), dist=distributed, seed=None)
+    dataloader = build_dataloader(dataset, cfg.data.samples_per_gpu, 2, len(cfg.gpu_ids), dist=distributed, seed=None)
     runner = EpochBasedRunner(model,
                               optimizer=optimizer,
-                              work_dir="work_dirs",
+                              work_dir=cfg.work_dir,
                               logger=logger,
                               meta=None)
     runner.timestamp = timestamp
@@ -148,7 +149,7 @@ def main():
         runner.resume(cfg.resume_from)
     elif cfg.load_from:
         runner.load_checkpoint(cfg.load_from)
-    runner.run([wlp300_dataloader], [('train', 1)], cfg.total_epochs)
+    runner.run([dataloader], [('train', 1)], cfg.total_epochs)
 
 if __name__ == "__main__":
     main()

@@ -11,24 +11,10 @@ from tqdm import tqdm
 import json
 from .pipelines.compose import Compose
 from .builder import DATASETS
-import torch
-from contextlib import contextmanager
 
-
-@contextmanager
-def torch_distributed_zero_first(local_rank: int):
-    """
-    Decorator to make all processes in distributed training wait for each local_master to do something.
-    """
-    if local_rank not in [-1, 0]:
-        torch.distributed.barrier()
-    yield   #中断后执行上下文代码，然后返回到此处继续往下执行
-    if local_rank == 0:
-        torch.distributed.barrier()
 
 @DATASETS.register_module()
 class WLP300Dataset(object):
-
     def __init__(self,
                  root_dir,
                  label_file,

@@ -11,6 +11,7 @@ import torch.nn as nn
 import cv2
 import torch.nn.functional as F
 import numpy as np
+from .builder import FACELOSS
 
 def preprocess(mask):
     """
@@ -86,7 +87,7 @@ def create_window(window_size, channel=3, sigma=1.5, gauss='original', n=2):
         g = tile(g, 0, 3)
         return g
 
-
+@FACELOSS.register_module()
 class WeightMaskLoss(nn.Module):
     """
         L2_Loss * Weight Mask
@@ -144,6 +145,8 @@ def dfl_ssim(img1, img2, mask, window_size=11, val_range=1, gauss='original'):
 
     return torch.mean((1.0 - ssim_val) / 2.0)
 
+
+@FACELOSS.register_module()
 class SSIM(torch.nn.Module):
 
     def __init__(self, mask_path, window_size=11, alpha=0.8, gauss='original'):
