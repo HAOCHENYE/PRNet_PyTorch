@@ -1,4 +1,3 @@
-from .backbone import ResFCN256
 import torch.nn as nn
 from .loss.prnet_loss import WeightMaskLoss, SSIM
 from .builder import FACEMODEL
@@ -7,14 +6,14 @@ import numpy as np
 import torch
 
 @FACEMODEL.register_module()
-class FaceModel(nn.Module):
+class PRNetModel(nn.Module):
     def __init__(self,
                  mask_path="../utils/uv_data/uv_weight_mask_gdh.png",
                  backbone=dict(type="ResFCN256"),
                  face_index_path="../utils/uv_data/face_ind.txt",
                  uv_kpt_path="../utils/uv_data/uv_kpt_ind.txt",
                  **kwargs):
-        super(FaceModel,self).__init__()
+        super(PRNetModel, self).__init__()
 
         self.model = build_backbone(backbone)
         self.loss = WeightMaskLoss(mask_path=mask_path)
@@ -59,8 +58,14 @@ class FaceModel(nn.Module):
         kpt = vertices[self.uv_kpt_ind[1, :], self.uv_kpt_ind[0, :], :]
         return dict(all_vertices=vertices.detach().cpu().numpy(),
                     valid_vertices=valid_vertices.detach().cpu().numpy(),
-                    keypoint=kpt.detach().cpu().numpy())
+                    keypoint=kpt.detach().cpu().numpy(),
+                    face_idx=self.face_ind)
 
+    def export_onnx(self, dummy_input):
+        return self.model(dummy_input)
 
+    def forward(self, data):
+        #TODO train test and export onnx
+        return self.export_onnx(data)
 
 
